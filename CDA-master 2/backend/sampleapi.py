@@ -28,7 +28,7 @@ class QueryResponse(BaseModel):
 class QueryRequest(BaseModel):
     parameter: str
 
-@app.post("/api/query_result", response_model=QueryResponse)
+@app.post("/ask_question", response_model=QueryResponse)
 def get_query_result(request: QueryRequest):
     # You can use the parameter from the request to influence the response
     parameter = request.parameter
