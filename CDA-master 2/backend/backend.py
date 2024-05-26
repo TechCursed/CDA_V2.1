@@ -24,6 +24,7 @@ db_name_global = None
 uploaded_files_info = []
 temp_file_paths = []
 file_names = []
+dataVizFile = None
 
 app = FastAPI()
 
@@ -110,6 +111,8 @@ async def upload_file_info(files: List[UploadFile] = File(...)):
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
         temp_file.write(file_content)
         temp_file.close()
+        dataVizFile = temp_file.name
+        logging.debug("File name : ",dataVizFile)
 
         # Append the file path and name to the global list
         uploaded_files_info.append({"file_path": temp_file.name, "file_name": file.filename})
