@@ -18,12 +18,13 @@ from pydantic import BaseModel
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG)
 
-# Global variable to store the db_name 
+# Global variable to store the db_name
 db_name_global = None
-# Global variable to store file info
+# Global variables to store file info
 uploaded_files_info = []
 temp_file_paths = []
 file_names = []
+
 app = FastAPI()
 
 # Allow CORS for your frontend origin
@@ -33,7 +34,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow specific frontend origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -117,10 +118,13 @@ async def upload_file_info(files: List[UploadFile] = File(...)):
         file_infos.append(file_info)
         logging.debug(uploaded_files_info)
 
+    # Log the lengths of the lists
+    logging.debug(f"File names after upload_file_info: {file_names}")
+    logging.debug(f"Temporary file paths after upload_file_info: {uploaded_files_info}")
+    logging.debug(f"Length of file_names after upload_file_info: {len(file_names)}")
+    logging.debug(f"Length of uploaded_files_info after upload_file_info: {len(uploaded_files_info)}")
+
     return {"file_info": file_infos, "saved_files": uploaded_files_info, "file_names": file_names}
-
-
-
 
 @app.post("/upload_and_clean")
 async def upload_and_clean():
@@ -197,6 +201,11 @@ async def upload_and_clean():
         logging.debug(temp_file_paths)
         sanitization_infos.append(sanitization_info)
 
+    # Log the lengths of the lists
+    logging.debug(f"Temporary file paths after cleaning: {temp_file_paths}")
+    logging.debug(f"Length of temp_file_paths after cleaning: {len(temp_file_paths)}")
+    logging.debug(f"Length of file_names after cleaning: {len(file_names)}")
+
     # Clear uploaded_files_info after processing
     uploaded_files_info.clear()
 
@@ -212,7 +221,13 @@ def infer_primary_key(df):
 async def create_tables_with_relationships():
     global temp_file_paths
     global db_name_global
-    global file_names  # Ensure this is global
+    global file_names
+
+    # Log the lengths of the lists before creating tables
+    logging.debug(f"Temporary file paths before creating tables: {temp_file_paths}")
+    logging.debug(f"File names before creating tables: {file_names}")
+    logging.debug(f"Length of temp_file_paths before creating tables: {len(temp_file_paths)}")
+    logging.debug(f"Length of file_names before creating tables: {len(file_names)}")
 
     if file_names is None:
         return {"error": "file_names is not initialized."}
@@ -227,7 +242,7 @@ async def create_tables_with_relationships():
     table_definitions = {}
     relationships = []
 
-    for temp_file_path, file_name in zip(temp_file_paths, file_names):  # Use zip to iterate through both lists
+    for temp_file_path, file_name in zip(temp_file_paths, file_names):
         file_extension = os.path.splitext(temp_file_path)[-1].lower()
 
         if file_extension == ".csv":
@@ -237,7 +252,6 @@ async def create_tables_with_relationships():
         else:
             return {"error": f"Invalid file format in {temp_file_path}. Please upload a CSV or XLSX file."}
 
-        # Use file_name directly as table name
         table_name = file_name.lower().replace(' ', '_')
 
         primary_key_column = infer_primary_key(df)
@@ -261,13 +275,13 @@ async def create_tables_with_relationships():
                     foreign_key = ForeignKey(f"{ref_table_name}.{column.name}")
                     relationships.append((table, column.name, foreign_key))
 
-    metadata.create_all(engine)  # Create all tables at once
+    metadata.create_all(engine)
 
     for table, column_name, foreign_key in relationships:
         with engine.connect() as conn:
             conn.execute(f"ALTER TABLE {table.name} ADD CONSTRAINT fk_{table.name}_{column_name} FOREIGN KEY ({column_name}) REFERENCES {foreign_key.target_fullname}")
 
-    for temp_file_path, file_name in zip(temp_file_paths, file_names):  # Use zip to iterate through both lists
+    for temp_file_path, file_name in zip(temp_file_paths, file_names):
         file_extension = os.path.splitext(temp_file_path)[-1].lower()
         table_name = file_name.lower().replace(' ', '_')
 
@@ -279,13 +293,10 @@ async def create_tables_with_relationships():
         df.to_sql(table_name, con=engine, if_exists='append', index=False)
         messages.append({"file": temp_file_path, "status": f"Data inserted into table {table_name}"})
 
-        # Delete the temporary file
         os.remove(temp_file_path)
         messages.append({"file": temp_file_path, "status": "Temporary file deleted"})
 
-    # Clear the temp_file_paths and file_names lists after processing
     temp_file_paths.clear()
     file_names.clear()
 
     return {"status": "Data processing completed", "details": messages}
-
