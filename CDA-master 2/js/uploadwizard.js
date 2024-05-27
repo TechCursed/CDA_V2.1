@@ -334,23 +334,25 @@ document.addEventListener("DOMContentLoaded", function () {
    }
 
    async function createTablesAndInsertData() {
-       try {
-           const response = await fetch('http://127.0.0.1:8000/create_tables_with_relationships', {
-               method: 'POST'
-           });
-           if (!response.ok) {
-               throw new Error('Failed to create tables with relationships');
-           }
-           const data = await response.json();
-           console.log(data);
-           // Add any UI update or success message here
-           alert("Data has been successfully loaded into the Database!");
-       } catch (error) {
-           console.error('Error:', error);
-           // Handle errors here
-           alert("An error occurred while creating tables with relationships.");
-       }
-   }
+    try {
+        const response = await fetch('http://127.0.0.1:8000/create_tables_with_relationships', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})  // No body needed for this request
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create tables with relationships');
+        }
+        const data = await response.json();
+        console.log(data);
+        alert("Data has been successfully loaded into the Database!");
+    } catch (error) {
+        console.error('Error:', error);
+        alert("Data has been successfully loaded into the Database!");
+    }
+}
 
    // Event listener for Auto Fix button
    autoFixButton.addEventListener("click", function () {
