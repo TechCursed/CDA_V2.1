@@ -61,7 +61,7 @@ async def create_db(request: CreateDBRequest):
     db_name_global = request.db_name
 
     connection = mysql.connector.connect(
-        host="localhost", user="root", password="12345"
+        host="localhost", user="root", password="asdfgh@3"
     )
     cursor = connection.cursor()
 
