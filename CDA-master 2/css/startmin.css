@@ -256,6 +256,10 @@ body {
    clear: both;
 }
 
+/* .nav_tab_data_wiz{
+   background-color: red;
+} */
+
 table.dataTable thead .sorting,
 table.dataTable thead .sorting_asc,
 table.dataTable thead .sorting_desc,
@@ -949,6 +953,10 @@ button:hover{
        height: auto; /* maintain aspect ratio */  
    }  
 
+   #searchButton{
+     background-color: #304565;
+     color: #ffffff;
+   }
    
 
 /* UPDATE STYLE FOR THE UPLOAD WIZARD */
@@ -1333,3 +1341,45 @@ select {
   justify-content: center; /* center horizontally */
   margin-bottom: 16px; /* add some bottom margin for spacing */
 }
+
+/* Changed css */
+
+.msger-inputarea {
+   display: flex;
+   align-items: stretch; /* This will make the child elements stretch vertically */
+ }
+ 
+ .msger-inputarea .msger-input {
+   flex-grow: 1; /* This will make the input field take up the remaining space */
+   padding: 0.5rem; /* Add some padding for better appearance */
+   border: 1px solid #ccc;
+   border-right: none; /* Remove the right border for a cleaner look */
+   height: 40px; 
+   margin-top: 5px;
+ }
+ 
+ .msger-send-btn {
+   padding: 0.5rem 1rem; /* Add some padding for better appearance */
+   border: 1px solid #ccc;
+   border-left: none; /* Remove the left border for a cleaner look */
+   background-color: #304565;
+   color: #fff;
+   cursor: pointer;
+   height: 40px;
+ }
+
+ .msger-header{
+   background-color: #304565;
+   color: #fff;
+   padding: 10px;
+ }
+
+ .msger-chat {
+   max-height: 30vh; /* Set the desired height */
+   overflow-y: auto; /* Add a scrollbar when content exceeds the height */
+   scroll-behavior: smooth; /* Smooth scrolling behavior */
+ }
+
+ .right-msg .msg-bubble{
+   background-color: #304565;
+ }
