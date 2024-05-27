@@ -15,6 +15,8 @@ import chardet
 import numpy as np
 from pydantic import BaseModel
 
+import subprocess
+
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG)
 
@@ -41,93 +43,120 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class CreateDBRequest(BaseModel):
     db_name: str
+
+
+def start_streamlit_app(data_viz_file):
+    # Define the command to run the Streamlit app with the data file as an argument
+    command = f"streamlit run visualization.py -- --dataVizFile {data_viz_file}"
+    # Start the Streamlit app using subprocess
+    subprocess.Popen(command, shell=True)
+
 
 @app.post("/create_db")
 async def create_db(request: CreateDBRequest):
     global db_name_global
     db_name_global = request.db_name
-    
-    connection = mysql.connector.connect(host="localhost", user="root", password="admin")  
-    cursor = connection.cursor()  
-    
-    cursor.execute("SHOW DATABASES")  
-    databases = cursor.fetchall()  
-    
-    if (db_name_global,) in databases:  
+
+    connection = mysql.connector.connect(
+        host="localhost", user="root", password="12345"
+    )
+    cursor = connection.cursor()
+
+    cursor.execute("SHOW DATABASES")
+    databases = cursor.fetchall()
+
+    if (db_name_global,) in databases:
         cursor.close()
         connection.close()
-        return {"status": f"Database {db_name_global} already exists. Using existing database."}  
-    else:  
+        return {
+            "status": f"Database {db_name_global} already exists. Using existing database."
+        }
+    else:
         try:
-            cursor.execute(f"CREATE DATABASE {db_name_global}")  
+            cursor.execute(f"CREATE DATABASE {db_name_global}")
             cursor.close()
             connection.close()
-            return {"status": f"Database {db_name_global} created successfully."}  
+            return {"status": f"Database {db_name_global} created successfully."}
         except mysql.connector.Error as err:
             cursor.close()
             connection.close()
             return {"error": f"Error creating database: {err}"}
 
+
 @app.post("/upload_file_info")
 async def upload_file_info(files: List[UploadFile] = File(...)):
     global uploaded_files_info
-    global file_names  # Ensure this is global
-
+    global file_names
+    global dataVizFile
     uploaded_files_info = []
-    file_infos = []  # Create a list to store file info for all files
-    file_names = []  # Create a list to store file names
-
+    file_infos = []
+    file_names = []
     for file in files:
         file_extension = os.path.splitext(file.filename)[-1].lower()
         file_content = await file.read()  # Read file content
-        file_names.append(file.filename.split('.')[0])  # Store file name without extension
-
+        file_names.append(
+            file.filename.split(".")[0]
+        )  # Store file name without extension
         # Detect file encoding
         result = chardet.detect(file_content)
-        encoding = result['encoding']
-
+        encoding = result["encoding"]
         # Load data into DataFrame based on file extension
         if file_extension == ".csv":
             df = pd.read_csv(io.StringIO(file_content.decode(encoding)))
         elif file_extension == ".xlsx":
             df = pd.read_excel(io.BytesIO(file_content))
         else:
-            return {"error": f"Invalid file format in {file.filename}. Please upload a CSV or XLSX file."}
-
+            return {
+                "error": f"Invalid file format in {file.filename}. Please upload a CSV or XLSX file."
+            }
         # Calculate file size
         file_size = len(file_content) / 1024 / 1024  # Size in MB
-
         # Store file info
         file_info = {
             "filename": file.filename,
             "total_rows": df.shape[0],
             "total_columns": df.shape[1],
-            "file_size(MB)": file_size
+            "file_size(MB)": file_size,
         }
-
         # Save the file content to a temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
         temp_file.write(file_content)
         temp_file.close()
         dataVizFile = temp_file.name
-        logging.debug("File name : ",dataVizFile)
-
+        print(
+            "-------------------------",
+            dataVizFile,
+            "------------------------------------",
+        )
+        logging.debug("File name : ", dataVizFile)
         # Append the file path and name to the global list
-        uploaded_files_info.append({"file_path": temp_file.name, "file_name": file.filename})
-
+        uploaded_files_info.append(
+            {"file_path": temp_file.name, "file_name": file.filename}
+        )
         # Append the file info to the list
         file_infos.append(file_info)
         logging.debug(uploaded_files_info)
-
     # Log the lengths of the lists
     logging.debug(f"File names after upload_file_info: {file_names}")
     logging.debug(f"Temporary file paths after upload_file_info: {uploaded_files_info}")
     logging.debug(f"Length of file_names after upload_file_info: {len(file_names)}")
-    logging.debug(f"Length of uploaded_files_info after upload_file_info: {len(uploaded_files_info)}")
+    logging.debug(
+        f"Length of uploaded_files_info after upload_file_info: {len(uploaded_files_info)}"
+    )
 
-    return {"file_info": file_infos, "saved_files": uploaded_files_info, "file_names": file_names}
+    # Start the Streamlit app with the data file
+    start_streamlit_app(dataVizFile)
+
+    return {
+        "file_info": file_infos,
+        "saved_files": uploaded_files_info,
+        "file_names": file_names,
+        "dataVizFile": dataVizFile,
+    }
+
 
 @app.post("/upload_and_clean")
 async def upload_and_clean():
@@ -140,12 +169,12 @@ async def upload_and_clean():
         file_name = file_info["file_name"]
         file_extension = os.path.splitext(file_path)[-1].lower()
 
-        with open(file_path, 'rb') as file:
+        with open(file_path, "rb") as file:
             file_content = file.read()
 
         # Detect file encoding
         result = chardet.detect(file_content)
-        encoding = result['encoding']
+        encoding = result["encoding"]
 
         # Load the DataFrame based on file extension
         if file_extension == ".csv":
@@ -153,7 +182,9 @@ async def upload_and_clean():
         elif file_extension == ".xlsx":
             df = pd.read_excel(io.BytesIO(file_content))
         else:
-            return {"error": f"Invalid file format in {file_name}. Please upload a CSV or XLSX file."}
+            return {
+                "error": f"Invalid file format in {file_name}. Please upload a CSV or XLSX file."
+            }
 
         sanitization_info = {"filename": file_name}
 
@@ -161,11 +192,11 @@ async def upload_and_clean():
         sanitization_info["original_shape"] = df.shape
 
         # Convert column names to lower case and replace spaces with underscore
-        df.columns = df.columns.str.lower().str.replace(' ', '_')
+        df.columns = df.columns.str.lower().str.replace(" ", "_")
         sanitization_info["column_names_sanitized"] = True
 
         # Replace special characters in column names
-        df.columns = df.columns.str.replace(r'\W', '', regex=True)
+        df.columns = df.columns.str.replace(r"\W", "", regex=True)
         sanitization_info["special_characters_removed_from_column_names"] = True
 
         # Strip leading/trailing whitespace from column names and values
@@ -174,16 +205,16 @@ async def upload_and_clean():
         sanitization_info["whitespace_removed"] = True
 
         # Convert date columns to standard date formats
-        for col in df.select_dtypes(include=['object']):
+        for col in df.select_dtypes(include=["object"]):
             try:
-                df[col] = pd.to_datetime(df[col], errors='ignore')
+                df[col] = pd.to_datetime(df[col], errors="ignore")
             except Exception as e:
                 pass
         sanitization_info["dates_standardized"] = True
 
         # Fill missing values with 'NA'
         initial_na_count = df.isna().sum().sum()
-        df = df.fillna('NA')
+        df = df.fillna("NA")
         sanitization_info["missing_values_filled"] = int(initial_na_count)
 
         # Remove duplicate rows
@@ -212,13 +243,18 @@ async def upload_and_clean():
     # Clear uploaded_files_info after processing
     uploaded_files_info.clear()
 
-    return {"status": "Data cleaned and saved", "sanitization_infos": sanitization_infos}
+    return {
+        "status": "Data cleaned and saved",
+        "sanitization_infos": sanitization_infos,
+    }
+
 
 def infer_primary_key(df):
     for column in df.columns:
         if df[column].is_unique:
             return column
     return None
+
 
 @app.post("/create_tables_with_relationships")
 async def create_tables_with_relationships():
@@ -229,7 +265,9 @@ async def create_tables_with_relationships():
     # Log the lengths of the lists before creating tables
     logging.debug(f"Temporary file paths before creating tables: {temp_file_paths}")
     logging.debug(f"File names before creating tables: {file_names}")
-    logging.debug(f"Length of temp_file_paths before creating tables: {len(temp_file_paths)}")
+    logging.debug(
+        f"Length of temp_file_paths before creating tables: {len(temp_file_paths)}"
+    )
     logging.debug(f"Length of file_names before creating tables: {len(file_names)}")
 
     if file_names is None:
@@ -238,7 +276,9 @@ async def create_tables_with_relationships():
     if len(temp_file_paths) != len(file_names):
         return {"error": "Mismatch between number of temporary files and file names."}
 
-    engine = create_engine(f'mysql+mysqlconnector://root:admin@localhost/{db_name_global}')
+    engine = create_engine(
+        f"mysql+mysqlconnector://root:12345@localhost/{db_name_global}"
+    )
     metadata = MetaData()
 
     messages = []
@@ -253,13 +293,20 @@ async def create_tables_with_relationships():
         elif file_extension == ".xlsx":
             df = pd.read_excel(temp_file_path)
         else:
-            return {"error": f"Invalid file format in {temp_file_path}. Please upload a CSV or XLSX file."}
+            return {
+                "error": f"Invalid file format in {temp_file_path}. Please upload a CSV or XLSX file."
+            }
 
-        table_name = file_name.lower().replace(' ', '_')
+        table_name = file_name.lower().replace(" ", "_")
 
         primary_key_column = infer_primary_key(df)
         if not primary_key_column:
-            messages.append({"file": temp_file_path, "status": f"No unique column found for primary key in {file_name}"})
+            messages.append(
+                {
+                    "file": temp_file_path,
+                    "status": f"No unique column found for primary key in {file_name}",
+                }
+            )
             continue
 
         columns = [Column(col, VARCHAR(255)) for col in df.columns]
@@ -269,12 +316,20 @@ async def create_tables_with_relationships():
         table = Table(table_name, metadata, *columns)
 
         table_definitions[table_name] = table
-        messages.append({"file": temp_file_path, "status": f"Primary key {primary_key_column} identified for table {table_name}"})
+        messages.append(
+            {
+                "file": temp_file_path,
+                "status": f"Primary key {primary_key_column} identified for table {table_name}",
+            }
+        )
 
     for table_name, table in table_definitions.items():
         for column in table.columns:
             for ref_table_name in table_definitions.keys():
-                if ref_table_name != table_name and column.name == f"{ref_table_name}_id":
+                if (
+                    ref_table_name != table_name
+                    and column.name == f"{ref_table_name}_id"
+                ):
                     foreign_key = ForeignKey(f"{ref_table_name}.{column.name}")
                     relationships.append((table, column.name, foreign_key))
 
@@ -282,19 +337,23 @@ async def create_tables_with_relationships():
 
     for table, column_name, foreign_key in relationships:
         with engine.connect() as conn:
-            conn.execute(f"ALTER TABLE {table.name} ADD CONSTRAINT fk_{table.name}_{column_name} FOREIGN KEY ({column_name}) REFERENCES {foreign_key.target_fullname}")
+            conn.execute(
+                f"ALTER TABLE {table.name} ADD CONSTRAINT fk_{table.name}_{column_name} FOREIGN KEY ({column_name}) REFERENCES {foreign_key.target_fullname}"
+            )
 
     for temp_file_path, file_name in zip(temp_file_paths, file_names):
         file_extension = os.path.splitext(temp_file_path)[-1].lower()
-        table_name = file_name.lower().replace(' ', '_')
+        table_name = file_name.lower().replace(" ", "_")
 
         if file_extension == ".csv":
             df = pd.read_csv(temp_file_path)
         elif file_extension == ".xlsx":
             df = pd.read_excel(temp_file_path)
 
-        df.to_sql(table_name, con=engine, if_exists='append', index=False)
-        messages.append({"file": temp_file_path, "status": f"Data inserted into table {table_name}"})
+        df.to_sql(table_name, con=engine, if_exists="append", index=False)
+        messages.append(
+            {"file": temp_file_path, "status": f"Data inserted into table {table_name}"}
+        )
 
         os.remove(temp_file_path)
         messages.append({"file": temp_file_path, "status": "Temporary file deleted"})
