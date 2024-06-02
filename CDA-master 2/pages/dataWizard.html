@@ -91,7 +91,7 @@
                             <a href="index.html" class="active"><i class="fa fa-upload fa-fw"></i>Upload Data</a>
                         </li>
                             <li>
-                                <a href="dataWizard.html" class="active"><i class="fa fa-tasks fa-fw"></i>Data Insights</a>
+                                <a href="index.html" class="active"><i class="fa fa-tasks fa-fw"></i>Data Insights</a>
                             </li>
                             <li>
                                 <a href="login.html" class="active"><i class="fa fa-sign-out fa-fw"></i>Logout</a>
@@ -105,7 +105,7 @@
                 <a class="navbar-brand" href="index.html">
                     <img src="../assets//WIT_BIG.D.png" width="80" height="50" class="d-inline-block align-top" alt="wipro-logo" style="padding-top: 0;" >
                   </a>
-                  <a class="navbar-brand navhead" href="index.html" style="color: white; margin-bottom: 30px; padding-top: 6px;"><h3 class="text-white mb-0">
+                  <a class="navbar-brand navhead" href="index.html" style="color: white; margin-bottom: 30px; padding-top: px;"><h3 class="text-white mb-0">
                     Conversational Data Analyser</Data></Data><span
                       style="font-size: 1.2rem; margin-left: 10px"
                       >Powered by Intel® Core™ Ultra Processor</span></h3>
@@ -167,16 +167,22 @@
          <div class="col-lg-2">
 
          </div>
+
         <div class="col-lg-8">
             <div class="form-group input-group">
-                <input type="text" class="form-control" style="height: 34px;" id="queryInput">
-                <span class="input-group-btn">
-                    <button class="btn btn-default" type="button" id="searchButton">
-                        <i class="fa fa-search"></i> Search Your Query
-                    </button>
-                </span>
+                <div class="search-container">
+                    <div class="search-box">
+                      <input type="text" placeholder="Search your query for analysis" class="search-input" id="queryInput" style="border: 0px;
+                      border-radius: 0%;">
+                      <button class="search-button" id="searchButton">
+                        <i class="fas fa-search"></i>
+                        <span>Visualise</span>
+                      </button>
+                    </div>
+                  </div>
             </div>
         </div>
+
 
         <div class="row">
             <div class="col-lg-6"></div>
