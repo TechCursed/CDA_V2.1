@@ -93,6 +93,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 updateform();
                 progress_backward();
                 contentchange();
+
+                // Re-enable the "Next Step" button when navigating back
+                next_click[formnumber].disabled = false;
             }
         });
     });
@@ -215,109 +218,109 @@ document.addEventListener("DOMContentLoaded", function () {
                <br>
            `;
 
-           fileDetailsContainer.appendChild(fileDetails);
-       });
-   }
+            fileDetailsContainer.appendChild(fileDetails);
+        });
+    }
 
-   async function createDatabase() {
-       const newProjectName = newProjectInput.value.trim();
-       const existingProjectName = existingProjectSelect.value;
+    async function createDatabase() {
+        const newProjectName = newProjectInput.value.trim();
+        const existingProjectName = existingProjectSelect.value;
 
-       let projectName = "";
+        let projectName = "";
 
-       if (newProjectName) {
-           projectName = newProjectName;
-       } else if (existingProjectName) {
-           projectName = existingProjectName;
-       } else {
-           console.error("Project name is required.");
-           return;
-       }
+        if (newProjectName) {
+            projectName = newProjectName;
+        } else if (existingProjectName) {
+            projectName = existingProjectName;
+        } else {
+            console.error("Project name is required.");
+            return;
+        }
 
-       try {
-           const response = await fetch('http://127.0.0.1:8000/create_db', {
-               method: 'POST',
-               headers: {
-                   'Content-Type': 'application/json'
-               },
-               body: JSON.stringify({ db_name: projectName })
-           });
+        try {
+            const response = await fetch('http://127.0.0.1:8000/create_db', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ db_name: projectName })
+            });
 
-           if (!response.ok) {
-               const errorData = await response.json();
-               console.error("Error creating database:", errorData);
-               return;
-           }
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Error creating database:", errorData);
+                return;
+            }
 
-           const data = await response.json();
-           console.log(data);
-       } catch (error) {
-           console.error("Failed to fetch:", error);
-       }
-   }
+            const data = await response.json();
+            console.log(data);
+        } catch (error) {
+            console.error("Failed to fetch:", error);
+        }
+    }
 
-   async function uploadFilesAndGetInfo() {
-       loader.style.display = 'block';  // Show the loader
+    async function uploadFilesAndGetInfo() {
+        loader.style.display = 'block';  // Show the loader
 
-       const formData = new FormData();
-       for (const file of fileInput.files) {
-           formData.append('files', file);
-       }
+        const formData = new FormData();
+        for (const file of fileInput.files) {
+            formData.append('files', file);
+        }
 
-       try {
-           const response = await fetch('http://127.0.0.1:8000/upload_file_info', {
-               method: 'POST',
-               body: formData
-           });
+        try {
+            const response = await fetch('http://127.0.0.1:8000/upload_file_info', {
+                method: 'POST',
+                body: formData
+            });
 
-           if (!response.ok) {
-               throw new Error("Failed to upload files and get info.");
-           }
+            if (!response.ok) {
+                throw new Error("Failed to upload files and get info.");
+            }
 
-           const data = await response.json();
-           console.log(data);
-           if (data.file_info) {
-               updateFileStatistics(data.file_info);
-           }
-       } catch (error) {
-           console.error("Failed to fetch:", error);
-       } finally {
-           loader.style.display = 'none';  // Hide the loader
-       }
-   }
+            const data = await response.json();
+            console.log(data);
+            if (data.file_info) {
+                updateFileStatistics(data.file_info);
+            }
+        } catch (error) {
+            console.error("Failed to fetch:", error);
+        } finally {
+            loader.style.display = 'none';  // Hide the loader
+        }
+    }
 
-   async function sanitizeData() {
-       sanitizationLoader.style.display = 'block'; // Show the loader for data sanitization
+    async function sanitizeData() {
+        sanitizationLoader.style.display = 'block'; // Show the loader for data sanitization
 
-       try {
-           const response = await fetch('http://127.0.0.1:8000/upload_and_clean', {
-               method: 'POST'
-           });
+        try {
+            const response = await fetch('http://127.0.0.1:8000/upload_and_clean', {
+                method: 'POST'
+            });
 
-           if (!response.ok) {
-               throw new Error('Failed to sanitize data.');
-           }
+            if (!response.ok) {
+                throw new Error('Failed to sanitize data.');
+            }
 
-           const data = await response.json();
-           console.log(data);
+            const data = await response.json();
+            console.log(data);
 
-           displaySanitizationResults(data.sanitization_infos);
-       } catch (error) {
-           console.error("Failed to fetch:", error);
-       } finally {
-           sanitizationLoader.style.display = 'none'; // Hide the loader for data sanitization
-       }
-   }
+            displaySanitizationResults(data.sanitization_infos);
+        } catch (error) {
+            console.error("Failed to fetch:", error);
+        } finally {
+            sanitizationLoader.style.display = 'none'; // Hide the loader for data sanitization
+        }
+    }
 
-   function displaySanitizationResults(data) {
-       const resultContainer = document.getElementById('sanitizationResults');
-       resultContainer.innerHTML = ''; // Clear existing content
+    function displaySanitizationResults(data) {
+        const resultContainer = document.getElementById('sanitizationResults');
+        resultContainer.innerHTML = ''; // Clear existing content
 
-       data.forEach(file => {
-           const fileResult = document.createElement('div');
-           fileResult.classList.add('file-result');
+        data.forEach(file => {
+            const fileResult = document.createElement('div');
+            fileResult.classList.add('file-result');
 
-           fileResult.innerHTML = `
+            fileResult.innerHTML = `
                <p><strong>File Name : </strong> ${file.filename}</p>
                <p><strong>Original Shape : </strong> ${file.original_shape.join(', ')}</p>
                <p><strong>Column Names Sanitized : </strong> ${file.column_names_sanitized}</p>
@@ -329,48 +332,48 @@ document.addEventListener("DOMContentLoaded", function () {
                <hr>
            `;
 
-           resultContainer.appendChild(fileResult);
-       });
-   }
-
-   async function createTablesAndInsertData() {
-    try {
-        const response = await fetch('http://127.0.0.1:8000/create_tables_with_relationships', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})  // No body needed for this request
+            resultContainer.appendChild(fileResult);
         });
-        if (!response.ok) {
-            throw new Error('Failed to create tables with relationships');
-        }
-        const data = await response.json();
-        console.log(data);
-        alert("Data has been successfully loaded into the Database!");
-    } catch (error) {
-        console.error('Error:', error);
-        alert("Data has been successfully loaded into the Database!");
     }
-}
 
-   // Event listener for Auto Fix button
-   autoFixButton.addEventListener("click", function () {
-       sanitizeData();
-       autoFixButton.style.display = "none"; // Hide the "Auto Fix" button
-       next_click[formnumber].disabled = false; // Enable the "Next Step" button
-   });
+    async function createTablesAndInsertData() {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/create_tables_with_relationships', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})  // No body needed for this request
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create tables with relationships');
+            }
+            const data = await response.json();
+            console.log(data);
+            alert("Data has been successfully loaded into the Database!");
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Data has been successfully loaded into the Database!");
+        }
+    }
 
-   // Disable the "Next Step" button initially
-   nextStepButton.disabled = true;
+    // Event listener for Auto Fix button
+    autoFixButton.addEventListener("click", function () {
+        sanitizeData();
+        autoFixButton.style.display = "none"; // Hide the "Auto Fix" button
+        next_click[formnumber].disabled = false; // Enable the "Next Step" button
+    });
 
-   // Event listener to enable/disable the "Next Step" button
-   autoFixButton.addEventListener('click', () => {
-       nextStepButton.disabled = false; // Enable the "Next Step" button when "Auto Fix" is clicked
-   });
+    // Disable the "Next Step" button initially
+    nextStepButton.disabled = true;
 
-   // Disable the "Next Step" button when it's clicked
-   nextStepButton.addEventListener('click', () => {
-       nextStepButton.disabled = true; // Disable the "Next Step" button when clicked
-   });
+    // Event listener to enable/disable the "Next Step" button
+    autoFixButton.addEventListener('click', () => {
+        nextStepButton.disabled = false; // Enable the "Next Step" button when "Auto Fix" is clicked
+    });
+
+    // Disable the "Next Step" button when it's clicked
+    nextStepButton.addEventListener('click', () => {
+        nextStepButton.disabled = true; // Disable the "Next Step" button when clicked
+    });
 });
